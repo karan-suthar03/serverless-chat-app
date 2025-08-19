@@ -1,0 +1,9 @@
+{
+  "name": "aws-sam",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install-all": "node install-all.js"
+  },
+  "description": "Helper package.json for managing dependencies in aws-sam subfolders."
+}

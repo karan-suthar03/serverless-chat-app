@@ -1,0 +1,9 @@
+{
+  "name": "check-username",
+  "version": "1.0.0",
+  "main": "handler.js",
+  "dependencies": {
+    "knex": "^3.1.0",
+    "pg": "^8.16.3"
+  }
+}

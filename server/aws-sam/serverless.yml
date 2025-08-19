@@ -1,0 +1,58 @@
+org: karansuthar
+app: test
+service: aws-sam
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ap-south-1
+  environment:
+    POSTGRES_URL: ${file(./.secrets.yml):POSTGRES_URL}
+  httpApi:
+    authorizers:
+      firebaseAuth:
+        identitySource: $request.header.Authorization
+        issuerUrl: ${file(./.secrets.yml):GOOGLE_ISSUER_URL}
+        audience:
+          - ${file(./.secrets.yml):GOOGLE_PROJECT_NAME}
+    cors:
+      allowedOrigins:
+        - "*"
+      allowedHeaders:
+        - "*"
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      allowCredentials: false
+
+package:
+  individually: true
+  patterns:
+    - '!node_modules/**'
+    - '!app/**'
+
+functions:
+  checkUsernameApi:
+    handler: app/open/checkUsername/handler.checkUsername
+    events:
+      - httpApi:
+          path: /api/open/checkUsername
+          method: GET
+    package:
+      patterns:
+        - app/open/checkUsername/**
+
+  meApi:
+    handler: app/protected/me/handler.getProfile
+    events:
+      - httpApi:
+          path: /api/protected/me
+          method: GET
+          authorizer:
+            name: firebaseAuth
+    package:
+      patterns:
+        - app/protected/me/**

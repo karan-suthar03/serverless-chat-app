@@ -1,0 +1,4 @@
+node_modules
+.serverless
+.secrets.yml
+app/**/node_modules/
