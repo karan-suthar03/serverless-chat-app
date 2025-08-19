@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../api/api_client.dart';
+import '../api/api_functions.dart';
 
 class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
@@ -87,22 +86,11 @@ class _AuthPageState extends State<AuthPage> {
 
     _debounce = Timer(const Duration(seconds: 2), () async {
       try {
-        final response = await apiClientOpen.get(
-          'checkUsername',
-          queryParams: {'username': username},
-        );
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          setState(() {
-            isCheckingUsername = false;
-            isUsernameAvailable = data['isAvailable'] == true;
-          });
-        } else {
-          setState(() {
-            isCheckingUsername = false;
-            usernameCheckError = 'Error checking username';
-          });
-        }
+        final available = await checkUsername(username);
+        setState(() {
+          isCheckingUsername = false;
+          isUsernameAvailable = available;
+        });
       } catch (e) {
         setState(() {
           isCheckingUsername = false;
@@ -223,13 +211,6 @@ class _AuthPageState extends State<AuthPage> {
                                 password: passwordController.text.trim(),
                               );
                             }
-                          } on FirebaseAuthException catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(e.message ?? 'Auth error'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
                           } finally {
                             if (mounted) {
                               setState(() => isLoading = false);
