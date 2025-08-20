@@ -3,4 +3,5 @@
 // these endpoints will be only used if available or else we'll fetch from github
 const Map<String, String> apiLinks = {
   'checkUsername': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/open/checkUsername',
+  'createUser': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/createAccount'
 };

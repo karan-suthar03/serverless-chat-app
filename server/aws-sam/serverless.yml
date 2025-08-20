@@ -56,3 +56,16 @@ functions:
     package:
       patterns:
         - app/protected/me/**
+
+
+  createUserApi:
+    handler: app/protected/createAccount/handler.createAccount
+    events:
+      - httpApi:
+          path: /api/protected/createAccount
+          method: POST
+          authorizer:
+            name: firebaseAuth
+    package:
+      patterns:
+        - app/protected/createAccount/**

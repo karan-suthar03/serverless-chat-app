@@ -12,3 +12,61 @@ Future<bool> checkUsername(String username) async {
   }
   return false;
 }
+
+enum CreateUserResponseType {
+  userAlreadyExists,
+  usernameFailed,
+  createdSuccessfully,
+  unknownError,
+}
+
+Future<Map<String, dynamic>?> createUser({
+  required String username,
+  String? token,
+}) async {
+  final url = Uri.parse(apiLinks['createUser']!);
+  final headers = {
+    'Content-Type': 'application/json',
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
+  final body = jsonEncode({
+    'username': username,
+  });
+  final response = await http.post(url, headers: headers, body: body);
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    if (data['type'] == 1) {
+      return {
+        'status': CreateUserResponseType.createdSuccessfully,
+        'message': data['message'],
+        'username': data['username'],
+      };
+    } else if (data['type'] == 2) {
+      return {
+        'status': CreateUserResponseType.usernameFailed,
+        'message': data['message'],
+      };
+    } else if (data['type'] == 3) {
+      return {
+        'status': CreateUserResponseType.unknownError,
+        'message': data['message'],
+      };
+    } else if (data['type'] == 4) {
+      return {
+        'status': CreateUserResponseType.userAlreadyExists,
+        'message': data['message'],
+      };
+    } else {
+      return {
+        'status': CreateUserResponseType.unknownError,
+        'message': 'An unknown error occurred.',
+      };
+    }
+  } else {
+    return {
+      'status': CreateUserResponseType.unknownError,
+      'message': 'An unknown error occurred.',
+    };
+  }
+}
+

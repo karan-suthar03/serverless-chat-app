@@ -84,7 +84,7 @@ class _AuthPageState extends State<AuthPage> {
       usernameCheckError = null;
     });
 
-    _debounce = Timer(const Duration(seconds: 2), () async {
+    _debounce = Timer(const Duration(seconds: 1), () async {
       try {
         final available = await checkUsername(username);
         setState(() {
@@ -209,7 +209,29 @@ class _AuthPageState extends State<AuthPage> {
                                   .createUserWithEmailAndPassword(
                                 email: emailController.text.trim(),
                                 password: passwordController.text.trim(),
-                              );
+                              ).then((userCredential) async {
+                                final token = await userCredential.user?.getIdToken();
+                                // Call backend createUser API
+                                final result = await createUser(
+                                  username: usernameController.text.trim(),
+                                  token: token,
+                                );
+                                if(result?['status'] == CreateUserResponseType.createdSuccessfully) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(result?['message']),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(result?['message'] ?? 'Error occurred'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              });
                             }
                           } finally {
                             if (mounted) {
