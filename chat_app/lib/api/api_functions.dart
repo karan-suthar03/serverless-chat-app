@@ -102,3 +102,83 @@ Future<Map<String, dynamic>> updateUsername({
     };
   }
 }
+
+enum finalizeAccountSetupRequestType{
+  skip,
+  displayName,
+  all
+}
+
+enum genericResponseType {
+  success,
+  failure
+}
+
+Future<Map<String, dynamic>> finalizeAccountSetup({
+  required String token,
+  String? displayName,
+  String? profilePictureUrl,
+  required finalizeAccountSetupRequestType type,
+}) async {
+  final url = Uri.parse(apiLinks['finalizeAccountSetup']!);
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
+  switch (type) {
+    case finalizeAccountSetupRequestType.skip:
+      final body = jsonEncode({
+        'requestType': 'skip',
+      });
+      final response = await http.post(url, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'status': data['type'] == 1 ? genericResponseType.success : genericResponseType.failure,
+          'message': data['message'],
+        };
+      } else {
+        return {
+          'status': genericResponseType.failure,
+          'message': 'An unknown error occurred.',
+        };
+      }
+    case finalizeAccountSetupRequestType.displayName:
+      final body = jsonEncode({
+        'requestType': 'displayName',
+        'displayName': displayName,
+      });
+      final response = await http.post(url, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'status': data['type'] == 1 ? genericResponseType.success : genericResponseType.failure,
+          'message': data['message'],
+        };
+      } else {
+        return {
+          'status': genericResponseType.failure,
+          'message': 'An unknown error occurred.',
+        };
+      }
+    case finalizeAccountSetupRequestType.all:
+      final body = jsonEncode({
+        'requestType': 'all',
+        'displayName': displayName,
+        'profilePictureUrl': profilePictureUrl,
+      });
+      final response = await http.post(url, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return {
+          'status': data['type'] == 1 ? genericResponseType.success : genericResponseType.failure,
+          'message': data['message'],
+        };
+      } else {
+        return {
+          'status': genericResponseType.failure,
+          'message': 'An unknown error occurred.',
+        };
+      }
+  }
+}

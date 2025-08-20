@@ -81,3 +81,15 @@ functions:
     package:
       patterns:
         - app/protected/accountSetup/**
+
+  finalizeAccountSetupApi:
+    handler: app/protected/accountSetup/handler.finalizeAccountSetup
+    events:
+      - httpApi:
+          path: /api/protected/finalizeAccountSetup
+          method: POST
+          authorizer:
+            name: firebaseAuth
+    package:
+      patterns:
+        - app/protected/accountSetup/**

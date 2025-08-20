@@ -108,4 +108,99 @@ exports.updateUsername = async (event) => {
       }),
     };
   }
-}
+};
+
+exports.finalizeAccountSetup = async (event) => {
+  try {
+    const claims = event.requestContext.authorizer.jwt.claims;
+    const uid = claims.user_id;
+    const { requestType, data = {} } = JSON.parse(event.body);
+
+    switch (requestType) {
+      case "skip":
+        await knex("users").where({ id: uid }).update({
+          is_profile_complete: true,
+        });
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            type: 1,
+            message: "Profile setup skipped",
+            id: uid,
+          }),
+        };
+
+      case "displayName":
+        if (!data.displayName) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({
+              type: 3,
+              message: "Missing displayName",
+              id: uid,
+            }),
+          };
+        }
+        await knex("users").where({ id: uid }).update({
+          display_name: data.displayName,
+          is_profile_complete: true,
+        });
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            type: 1,
+            message: "Display name updated",
+            id: uid,
+          }),
+        };
+
+      case "all":
+        if (!data.displayName || !data.profilePictureUrl) {
+          return {
+            statusCode: 400,
+            body: JSON.stringify({
+              type: 3,
+              message: "Missing displayName or profilePictureUrl",
+              id: uid,
+            }),
+          };
+        }
+        await knex("users")
+          .where({ id: uid })
+          .update({
+            display_name: data.displayName,
+            profile_picture_url: data.profilePictureUrl,
+            is_profile_complete: true,
+          });
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            type: 1,
+            message: "Profile setup completed",
+            id: uid,
+          }),
+        };
+
+      default:
+        return {
+          statusCode: 400,
+          body: JSON.stringify({
+            type: 3,
+            message: "Invalid request type",
+            id: uid,
+          }),
+        };
+    }
+  } catch (err) {
+    console.error("FinalizeAccountSetup Error:", err);
+
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        type: 3,
+        message: "Internal server error",
+        error: err.message,
+      }),
+    };
+  }
+};

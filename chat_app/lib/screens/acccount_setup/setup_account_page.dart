@@ -1,3 +1,8 @@
+import 'package:chat_app/api/api_functions.dart';
+import 'package:chat_app/main.dart';
+import 'package:chat_app/screens/auth_page.dart';
+import 'package:chat_app/screens/main/main_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class SetupAccountPage extends StatefulWidget {
@@ -89,12 +94,47 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
                       : () async {
                           setState(() => isLoading = true);
 
-                          // TODO: save display name & photo to Firebase / backend
-                          await Future.delayed(const Duration(seconds: 1));
+                          final displayName = displayNameController.text.trim();
+                          final currentUser = FirebaseAuth.instance.currentUser;
+                          if (currentUser == null) {
+                            navigatorKey.currentState?.pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => const AuthPage(),
+                              ),
+                            );
+                            return;
+                          }
 
-                          if (mounted) {
+                          final token = await currentUser.getIdToken();
+
+                          if (token == null) {
                             setState(() => isLoading = false);
-                            Navigator.pushReplacementNamed(context, "/home");
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Failed to get authentication token. Please try again.')),
+                            );
+                            return;
+                          }
+
+                          final result = await finalizeAccountSetup(
+                            token: token, 
+                            type: finalizeAccountSetupRequestType.displayName,
+                            displayName: displayName,
+                            );
+                          setState(() => isLoading = false);
+                          switch (result['status']) {
+                            case genericResponseType.success:
+                              navigatorKey.currentState?.pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => const MainPage(),
+                                ),
+                              );
+                              break;
+                            case genericResponseType.failure:
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(result['message'])),
+                              );
+                              break;
+                            default:
                           }
                         },
                   child: isLoading
