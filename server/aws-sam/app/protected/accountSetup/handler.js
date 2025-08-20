@@ -77,3 +77,35 @@ exports.createAccount = async (event) => {
     };
   }
 };
+
+exports.updateUsername = async (event) => {
+  const claims = event.requestContext.authorizer.jwt.claims;
+  const uid = claims.user_id;
+  const { username } = JSON.parse(event.body);
+
+  try {
+    await knex('users')
+      .where({ id: uid })
+      .update({ username });
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        type: 1,
+        message: "Username updated successfully",
+        id: uid,
+        username
+      }),
+    };
+  } catch (err) {
+    console.error("Update username error:", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        type: 3,
+        message: "Failed to update username",
+        error: err.message
+      }),
+    };
+  }
+}
