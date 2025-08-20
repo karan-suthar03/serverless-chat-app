@@ -103,13 +103,13 @@ Future<Map<String, dynamic>> updateUsername({
   }
 }
 
-enum finalizeAccountSetupRequestType{
+enum FinalizeAccountSetupRequestType{
   skip,
   displayName,
   all
 }
 
-enum genericResponseType {
+enum GenericResponseType {
   success,
   failure
 }
@@ -118,7 +118,7 @@ Future<Map<String, dynamic>> finalizeAccountSetup({
   required String token,
   String? displayName,
   String? profilePictureUrl,
-  required finalizeAccountSetupRequestType type,
+  required FinalizeAccountSetupRequestType type,
 }) async {
   final url = Uri.parse(apiLinks['finalizeAccountSetup']!);
   final headers = {
@@ -126,7 +126,7 @@ Future<Map<String, dynamic>> finalizeAccountSetup({
     'Authorization': 'Bearer $token',
   };
   switch (type) {
-    case finalizeAccountSetupRequestType.skip:
+    case FinalizeAccountSetupRequestType.skip:
       final body = jsonEncode({
         'requestType': 'skip',
       });
@@ -134,51 +134,79 @@ Future<Map<String, dynamic>> finalizeAccountSetup({
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {
-          'status': data['type'] == 1 ? genericResponseType.success : genericResponseType.failure,
+          'status': data['type'] == 1 ? GenericResponseType.success : GenericResponseType.failure,
           'message': data['message'],
         };
       } else {
         return {
-          'status': genericResponseType.failure,
+          'status': GenericResponseType.failure,
           'message': 'An unknown error occurred.',
         };
       }
-    case finalizeAccountSetupRequestType.displayName:
+    case FinalizeAccountSetupRequestType.displayName:
       final body = jsonEncode({
         'requestType': 'displayName',
-        'displayName': displayName,
+        'data': {
+          'displayName': displayName,
+        },
       });
       final response = await http.post(url, headers: headers, body: body);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {
-          'status': data['type'] == 1 ? genericResponseType.success : genericResponseType.failure,
+          'status': data['type'] == 1 ? GenericResponseType.success : GenericResponseType.failure,
           'message': data['message'],
         };
       } else {
         return {
-          'status': genericResponseType.failure,
+          'status': GenericResponseType.failure,
           'message': 'An unknown error occurred.',
         };
       }
-    case finalizeAccountSetupRequestType.all:
+    case FinalizeAccountSetupRequestType.all:
       final body = jsonEncode({
         'requestType': 'all',
-        'displayName': displayName,
-        'profilePictureUrl': profilePictureUrl,
+        'data': {
+          'displayName': displayName,
+          'profilePictureUrl': profilePictureUrl,
+        }
       });
       final response = await http.post(url, headers: headers, body: body);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {
-          'status': data['type'] == 1 ? genericResponseType.success : genericResponseType.failure,
+          'status': data['type'] == 1 ? GenericResponseType.success : GenericResponseType.failure,
           'message': data['message'],
         };
       } else {
         return {
-          'status': genericResponseType.failure,
+          'status': GenericResponseType.failure,
           'message': 'An unknown error occurred.',
         };
       }
+  }
+}
+
+Future<Map<String, dynamic>> getUserData({
+  required String token,
+}) async {
+  final url = Uri.parse(apiLinks['me']!);
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
+  final response = await http.get(url, headers: headers);
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return {
+      'status': data['type'] == 1 ? GenericResponseType.success : GenericResponseType.failure,
+      'message': data['message'],
+      'user': data['user'],
+    };
+  } else {
+    return {
+      'status': GenericResponseType.failure,
+      'message': 'An unknown error occurred.',
+    };
   }
 }

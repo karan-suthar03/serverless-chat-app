@@ -1,127 +1,133 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:chat_app/api/api_functions.dart';
+import 'package:chat_app/firebase_options.dart';
+import 'package:chat_app/screens/acccount_setup/setup_account_page.dart';
+import 'package:chat_app/screens/acccount_setup/username_retry_page.dart';
+import 'package:chat_app/screens/auth_page.dart';
+import 'package:chat_app/screens/main/main_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-
-
-typedef SplashFinishedCallback = void Function(BuildContext context);
+import 'package:shared_preferences/shared_preferences.dart';
+import '../main.dart';
 
 class SplashScreen extends StatefulWidget {
-  final SplashFinishedCallback? onFinished;
-  const SplashScreen({super.key, this.onFinished});
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
-  late AnimationController _slideController;
-  late Animation<Offset> _slideAnimation;
-
+class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    );
-    _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
-    _slideController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _slideAnimation = Tween<Offset>(begin: const Offset(0.0, 1.0), end: Offset.zero).animate(CurvedAnimation(
-      parent: _slideController,
-      curve: Curves.easeOut,
-    ));
-    _fadeController.forward();
-    _slideController.forward();
-    Future.delayed(const Duration(seconds: 1), () {
-      if (widget.onFinished != null) {
-        widget.onFinished!(context);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    _slideController.dispose();
-    super.dispose();
+    _checkAuthStatus();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF232526), Color(0xFF414345)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF00C6FF), Color(0xFF0072FF)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(24),
-                  child: const Icon(
-                    Icons.flash_on_rounded,
-                    size: 80,
-                    color: Colors.white,
-                  ),
-                ),
+    return const Scaffold(
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.chat_bubble,
+              size: 80,
+              color: Colors.black,
+            ),
+            SizedBox(height: 24),
+            Text(
+              "Chat App",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
-              const SizedBox(height: 28),
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: Text(
-                  'Chat App',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFF00C6FF),
-                    letterSpacing: 1.5,
-                    fontFamily: 'Montserrat',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SlideTransition(
-                position: _slideAnimation,
-                child: Text(
-                  'Connect and chat instantly.',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.white70,
-                    fontFamily: 'Montserrat',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00C6FF)),
-                  backgroundColor: Colors.white24,
-                  strokeWidth: 4,
-                ),
-              ),
-            ],
-          ),
+            ),
+            SizedBox(height: 48),
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Future<void> _checkAuthStatus() async {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final pref = await SharedPreferences.getInstance();
+
+    if (currentUser == null) {
+      _navigateTo(const AuthPage());
+      return;
+    }
+
+    final userData = pref.getString('user');
+
+    if (userData != null) {
+      final userMap = jsonDecode(userData);
+      if (userMap['isSetUp'] == true) {
+        _navigateTo(const MainPage());
+        return;
+      }
+    }
+
+    try {
+      final token = await currentUser.getIdToken(true);
+      final result = await getUserData(token: token ?? '');
+
+      if (result['status'] == GenericResponseType.success) {
+        final user = result['user'];
+        if (user != null) {
+          await _handleUser(user);
+        } else {
+          _showOfflineFallback();
+        }
+      } else {
+        _showOfflineFallback();
+      }
+    } catch (e) {
+      _showOfflineFallback();
+    }
+  }
+
+  void _showOfflineFallback() {
+    scaffoldMessengerKey.currentState?.showSnackBar(
+      const SnackBar(
+        content: Text(
+          'No internet connection. Please try again later.',
+        ),
+      ),
+    );
+    _navigateTo(const AuthPage());
+  }
+
+
+  Future<void> _handleUser(Map<String, dynamic> user) async {
+    final pref = await SharedPreferences.getInstance();
+
+    if (user['is_profile_complete'] == true) {
+      await pref.setString('user', jsonEncode({'isSetUp': true}));
+      _navigateTo(const MainPage());
+    } else if (user['username'] != null) {
+      _navigateTo(const SetupAccountPage());
+    } else {
+      _navigateTo(const UsernameRetryPage());
+    }
+  }
+
+  void _navigateTo(Widget page) {
+    navigatorKey.currentState?.pushReplacement(
+      MaterialPageRoute(builder: (_) => page),
     );
   }
 }

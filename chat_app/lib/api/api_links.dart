@@ -5,5 +5,6 @@ const Map<String, String> apiLinks = {
   'checkUsername': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/open/checkUsername',
   'createUser': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/createAccount',
   'updateUsername': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/updateUsername',
-  'finalizeAccountSetup': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/finalizeAccountSetup'
+  'finalizeAccountSetup': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/finalizeAccountSetup',
+  'me': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/me',
 };

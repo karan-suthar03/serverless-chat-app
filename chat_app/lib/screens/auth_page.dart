@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:chat_app/main.dart';
 import 'package:chat_app/screens/acccount_setup/setup_account_page.dart';
 import 'package:chat_app/screens/acccount_setup/username_retry_page.dart';
+import 'package:chat_app/screens/main/main_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_functions.dart';
 
 class AuthPage extends StatefulWidget {
@@ -196,6 +200,59 @@ class _AuthPageState extends State<AuthPage> {
                                   .signInWithEmailAndPassword(
                                 email: emailController.text.trim(),
                                 password: passwordController.text.trim(),
+                              );
+                              final currentUser = FirebaseAuth.instance.currentUser;
+                              if (currentUser != null) {
+                                final token = await currentUser.getIdToken(true);
+                                if (token == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Failed to retrieve token'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                  setState(() => isLoading = false);
+                                  return;
+                                }
+                                final result = await getUserData(token: token);
+                                if (result['status'] == GenericResponseType.success) {
+                                  final user = result['user'];
+                                  if (user != null) {
+                                    if(user['is_profile_complete']==true) {
+                                      final pref = await SharedPreferences.getInstance();
+                                      final data = {
+                                        'isSetUp': true
+                                      };
+                                      await pref.setString('user', jsonEncode(data));
+                                      navigatorKey.currentState?.pushReplacement(
+                                        MaterialPageRoute(
+                                          builder: (context) => const MainPage(),
+                                        ),
+                                      );
+                                    } else {
+                                      if(user['username'] != null) {
+                                        navigatorKey.currentState?.pushReplacement(
+                                          MaterialPageRoute(
+                                            builder: (context) => const SetupAccountPage(),
+                                          ),
+                                        );
+                                      }else{
+                                        navigatorKey.currentState?.pushReplacement(
+                                          MaterialPageRoute(
+                                            builder: (context) => const UsernameRetryPage(),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                  return;
+                                }
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Something went wrong.'),
+                                  backgroundColor: Colors.red,
+                                ),
                               );
                             } else {
                               if (isUsernameAvailable == false ||

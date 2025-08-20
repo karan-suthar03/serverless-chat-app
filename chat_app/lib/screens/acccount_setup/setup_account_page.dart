@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:chat_app/api/api_functions.dart';
 import 'package:chat_app/main.dart';
 import 'package:chat_app/screens/auth_page.dart';
 import 'package:chat_app/screens/main/main_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SetupAccountPage extends StatefulWidget {
   const SetupAccountPage({super.key});
@@ -16,6 +19,12 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
   final TextEditingController displayNameController = TextEditingController();
 
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    initializeSharePreferenceUserData(false);
+  }
 
   @override
   void dispose() {
@@ -117,19 +126,20 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
 
                           final result = await finalizeAccountSetup(
                             token: token, 
-                            type: finalizeAccountSetupRequestType.displayName,
+                            type: FinalizeAccountSetupRequestType.displayName,
                             displayName: displayName,
                             );
                           setState(() => isLoading = false);
                           switch (result['status']) {
-                            case genericResponseType.success:
+                            case GenericResponseType.success:
+                              initializeSharePreferenceUserData(true);
                               navigatorKey.currentState?.pushReplacement(
                                 MaterialPageRoute(
                                   builder: (context) => const MainPage(),
                                 ),
                               );
                               break;
-                            case genericResponseType.failure:
+                            case GenericResponseType.failure:
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(result['message'])),
                               );
@@ -153,9 +163,49 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
 
               // Skip button
               TextButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, "/home");
-                },
+                onPressed: isLoading
+                    ? null
+                    : () async {
+                        setState(() => isLoading = true);
+                        final currentUser = FirebaseAuth.instance.currentUser;
+                        if (currentUser == null) {
+                          navigatorKey.currentState?.pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => const AuthPage(),
+                            ),
+                          );
+                          return;
+                        }
+                        final token = await currentUser.getIdToken();
+                        if (token == null) {
+                          setState(() => isLoading = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Failed to get authentication token. Please try again.')),
+                          );
+                          return;
+                        }
+                        final result = await finalizeAccountSetup(
+                          token: token,
+                          type: FinalizeAccountSetupRequestType.skip,
+                        );
+                        setState(() => isLoading = false);
+                        switch (result['status']) {
+                          case GenericResponseType.success:
+                            initializeSharePreferenceUserData(true);
+                            navigatorKey.currentState?.pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => const MainPage(),
+                              ),
+                            );
+                            break;
+                          case GenericResponseType.failure:
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(result['message'])),
+                            );
+                            break;
+                          default:
+                        }
+                      },
                 child: const Text(
                   "Skip for now",
                   style: TextStyle(color: Colors.black54),
@@ -166,5 +216,14 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
         ),
       ),
     );
+  }
+
+  Future<void> initializeSharePreferenceUserData(bool isSetUp) async {
+    final user = {
+      'isSetUp': isSetUp
+    };
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString('user', jsonEncode(user));
+    return;
   }
 }
