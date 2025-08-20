@@ -21,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
     _fadeController = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 1),
       vsync: this,
     );
     _fadeAnimation = CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut);
@@ -35,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     ));
     _fadeController.forward();
     _slideController.forward();
-    Future.delayed(const Duration(seconds: 4), () {
+    Future.delayed(const Duration(seconds: 1), () {
       if (widget.onFinished != null) {
         widget.onFinished!(context);
       }

@@ -20,7 +20,7 @@ enum CreateUserResponseType {
   unknownError,
 }
 
-Future<Map<String, dynamic>?> createUser({
+Future<Map<String, dynamic>> createUser({
   required String username,
   String? token,
 }) async {
@@ -70,3 +70,35 @@ Future<Map<String, dynamic>?> createUser({
   }
 }
 
+enum UpdateUsernameResponseType {
+  usernameUpdatedSuccessfully,
+  usernameFailed,
+  unknownError,
+}
+
+Future<Map<String, dynamic>> updateUsername({
+  required String username,
+  required String token,
+}) async {
+  final url = Uri.parse(apiLinks['updateUsername']!);
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
+  final body = jsonEncode({
+    'username': username,
+  });
+  final response = await http.post(url, headers: headers, body: body);
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return {
+      'status': data['type'] == 1 ? UpdateUsernameResponseType.usernameUpdatedSuccessfully : UpdateUsernameResponseType.usernameFailed,
+      'message': data['message'],
+    };
+  } else {
+    return {
+      'status': UpdateUsernameResponseType.unknownError,
+      'message': 'An unknown error occurred.',
+    };
+  }
+}

@@ -1,3 +1,6 @@
+import 'package:chat_app/main.dart';
+import 'package:chat_app/screens/acccount_setup/setup_account_page.dart';
+import 'package:chat_app/screens/acccount_setup/username_retry_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -216,20 +219,43 @@ class _AuthPageState extends State<AuthPage> {
                                   username: usernameController.text.trim(),
                                   token: token,
                                 );
-                                if(result?['status'] == CreateUserResponseType.createdSuccessfully) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(result?['message']),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(result?['message'] ?? 'Error occurred'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
+                                switch (result['status']) {
+                                  case CreateUserResponseType.createdSuccessfully:
+                                    navigatorKey.currentState?.pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (context) => const SetupAccountPage(),
+                                      ),
+                                    );
+                                    break;
+                                  case CreateUserResponseType.usernameFailed:
+                                    navigatorKey.currentState?.pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (context) => const UsernameRetryPage(),
+                                      ),
+                                    );
+                                  case CreateUserResponseType.userAlreadyExists:
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(result['message'] ?? 'User already exists'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    break;
+                                  case CreateUserResponseType.unknownError:
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(result['message'] ?? 'unknownError'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    break;
+                                  default:
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(result['message'] ?? 'Error occurred'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
                                 }
                               });
                             }
