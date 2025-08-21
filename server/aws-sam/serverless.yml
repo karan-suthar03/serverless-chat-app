@@ -93,3 +93,15 @@ functions:
     package:
       patterns:
         - app/protected/accountSetup/**
+
+  searchUserApi:
+    handler: app/protected/searchUser/handler.searchUsers
+    events:
+      - httpApi:
+          path: /api/protected/searchUsers
+          method: GET
+          authorizer:
+            name: firebaseAuth
+    package:
+      patterns:
+        - app/protected/searchUser/**

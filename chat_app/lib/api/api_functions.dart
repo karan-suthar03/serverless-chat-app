@@ -210,3 +210,32 @@ Future<Map<String, dynamic>> getUserData({
     };
   }
 }
+
+Future<Map<String, dynamic>> searchUsers({
+  required String query,
+  required String token,
+}) async {
+  final url = Uri.parse('${apiLinks['searchUsers']}?searchQuery=$query');
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
+  final response = await http.get(url, headers: headers);
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return {
+      'status': data['type'] == 1 ? GenericResponseType.success : GenericResponseType.failure,
+      'message': data['message'],
+      'users': data['users'],
+    };
+  } else if(response.statusCode == 500){
+    return {
+      'status': GenericResponseType.failure,
+      'message': response.body,
+    };
+  }
+  return {
+    'status': GenericResponseType.failure,
+    'message': 'An unknown error occurred.',
+  };
+}

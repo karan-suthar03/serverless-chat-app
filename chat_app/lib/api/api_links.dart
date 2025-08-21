@@ -7,4 +7,5 @@ const Map<String, String> apiLinks = {
   'updateUsername': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/updateUsername',
   'finalizeAccountSetup': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/finalizeAccountSetup',
   'me': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/me',
+  'searchUsers': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/searchUsers',
 };
