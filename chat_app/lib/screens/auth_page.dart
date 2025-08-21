@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:chat_app/main.dart';
 import 'package:chat_app/screens/acccount_setup/setup_account_page.dart';
 import 'package:chat_app/screens/acccount_setup/username_retry_page.dart';
@@ -63,17 +62,16 @@ class _AuthPageState extends State<AuthPage> {
     });
   }
 
-  /// Validate username format
   bool _isValidUsername(String username) {
-    final regex = RegExp(r'^[a-zA-Z0-9_]{3,16}$'); // 3-16 chars, letters/numbers/_
+    final regex = RegExp(r'^[a-zA-Z0-9_]{3,16}$');
     return regex.hasMatch(username);
   }
+
   void _validateForm() {
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
     final username = usernameController.text.trim();
 
-    // Basic email regex
     final isEmailValid = RegExp(
             r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
         .hasMatch(email);
@@ -92,8 +90,6 @@ class _AuthPageState extends State<AuthPage> {
     }
   }
 
-
-  /// Debounced username checking
   void _onUsernameChanged() {
     if (isLogin) return;
 
@@ -151,6 +147,7 @@ class _AuthPageState extends State<AuthPage> {
       }
     });
   }
+
   Future<void> _submitForm() async {
     setState(() => isLoading = true);
 
@@ -231,7 +228,6 @@ class _AuthPageState extends State<AuthPage> {
         }
       }
     } on FirebaseAuthException catch (e) {
-      // Handle specific Firebase errors
       String message = 'An error occurred. Please check your credentials.';
       if (e.code == 'user-not-found' || e.code == 'wrong-password') {
         message = 'Invalid email or password.';
@@ -257,7 +253,7 @@ class _AuthPageState extends State<AuthPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -266,8 +262,10 @@ class _AuthPageState extends State<AuthPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
@@ -277,17 +275,12 @@ class _AuthPageState extends State<AuthPage> {
               // Header
               Text(
                 isLogin ? "Login" : "Sign Up",
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+                style: textTheme.headlineMedium,
               ),
               const SizedBox(height: 40),
 
               Column(
                 children: [
-                  // Username field (signup only)
                   AnimatedSize(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
@@ -315,8 +308,9 @@ class _AuthPageState extends State<AuthPage> {
                                   padding: const EdgeInsets.only(top: 8.0, left: 4.0),
                                   child: Text(
                                     usernameCheckError!,
-                                    style: const TextStyle(
-                                        color: Colors.red, fontSize: 13),
+                                    style: TextStyle(
+                                        color: theme.colorScheme.error,
+                                        fontSize: 13),
                                   ),
                                 ),
                               const SizedBox(height: 16),
@@ -337,24 +331,14 @@ class _AuthPageState extends State<AuthPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    disabledBackgroundColor: Colors.grey.shade400,
-                  ),
                   onPressed: isLoading || !_isFormValid ? null : _submitForm,
                   child: isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: theme.colorScheme.onPrimary,
                           ),
                         )
                       : Text(isLogin ? "Login" : "Create Account"),
@@ -369,7 +353,6 @@ class _AuthPageState extends State<AuthPage> {
                   isLogin
                       ? "Don't have an account? Sign Up"
                       : "Already have an account? Login",
-                  style: const TextStyle(color: Colors.black54),
                 ),
               ),
             ],
@@ -378,8 +361,6 @@ class _AuthPageState extends State<AuthPage> {
       ),
     );
   }
-
-  /// Username check icon widget
   Widget _buildUsernameStatus() {
     if (isLogin || usernameController.text.isEmpty || !_isValidUsername(usernameController.text.trim())) return const SizedBox();
     if (isCheckingUsername) {
@@ -406,14 +387,6 @@ class _AuthPageState extends State<AuthPage> {
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon, size: 20),
-        filled: true,
-        fillColor: Colors.grey.shade100,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
       ),
     );
   }

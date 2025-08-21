@@ -23,13 +23,15 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAuthStatus();
+    Future.delayed(const Duration(milliseconds: 500), _checkAuthStatus);
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.white,
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -37,21 +39,15 @@ class _SplashScreenState extends State<SplashScreen> {
             Icon(
               Icons.chat_bubble,
               size: 80,
-              color: Colors.black,
+              color: theme.colorScheme.primary,
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             Text(
               "Chat App",
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-              ),
+              style: textTheme.headlineMedium,
             ),
-            SizedBox(height: 48),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-            ),
+            const SizedBox(height: 48),
+            const CircularProgressIndicator(),
           ],
         ),
       ),
@@ -72,7 +68,6 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     final userData = pref.getString('user');
-
     if (userData != null) {
       final userMap = jsonDecode(userData);
       if (userMap['isSetUp'] == true) {
@@ -90,22 +85,20 @@ class _SplashScreenState extends State<SplashScreen> {
         if (user != null) {
           await _handleUser(user);
         } else {
-          _showOfflineFallback();
+          _showErrorAndNavigateToAuth('Failed to retrieve user data.');
         }
       } else {
-        _showOfflineFallback();
+        _showErrorAndNavigateToAuth(result['message'] ?? 'An unknown error occurred.');
       }
     } catch (e) {
-      _showOfflineFallback();
+      _showErrorAndNavigateToAuth('No internet connection. Please try again later.');
     }
   }
 
-  void _showOfflineFallback() {
+  void _showErrorAndNavigateToAuth(String message) {
     scaffoldMessengerKey.currentState?.showSnackBar(
-      const SnackBar(
-        content: Text(
-          'No internet connection. Please try again later.',
-        ),
+      SnackBar(
+        content: Text(message),
       ),
     );
     _navigateTo(const AuthPage());
@@ -126,6 +119,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateTo(Widget page) {
+    if (!mounted) return;
     navigatorKey.currentState?.pushReplacement(
       MaterialPageRoute(builder: (_) => page),
     );

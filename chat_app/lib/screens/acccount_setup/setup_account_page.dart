@@ -17,7 +17,6 @@ class SetupAccountPage extends StatefulWidget {
 
 class _SetupAccountPageState extends State<SetupAccountPage> {
   final TextEditingController displayNameController = TextEditingController();
-
   bool isLoading = false;
 
   @override
@@ -31,11 +30,21 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
     displayNameController.dispose();
     super.dispose();
   }
+  Future<void> initializeSharePreferenceUserData(bool isSetUp) async {
+    final user = {
+      'isSetUp': isSetUp
+    };
+    final pref = await SharedPreferences.getInstance();
+    await pref.setString('user', jsonEncode(user));
+    return;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
@@ -43,13 +52,9 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Header
-              const Text(
+              Text(
                 "Set up your account",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+                style: textTheme.headlineMedium,
               ),
               const SizedBox(height: 40),
 
@@ -60,8 +65,11 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
                 },
                 child: CircleAvatar(
                   radius: 40,
-                  backgroundColor: Colors.grey.shade300,
-                  child: const Icon(Icons.camera_alt, color: Colors.black54),
+                  backgroundColor: theme.colorScheme.surface,
+                  child: Icon(
+                    Icons.camera_alt,
+                    color: theme.colorScheme.secondary,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -69,17 +77,9 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
               // Display name field
               TextField(
                 controller: displayNameController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Display Name",
-                  prefixIcon: const Icon(Icons.badge, size: 20),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
+                  prefixIcon: Icon(Icons.badge, size: 20),
                 ),
               ),
 
@@ -89,15 +89,6 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                   onPressed: isLoading
                       ? null
                       : () async {
@@ -117,6 +108,7 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
                           final token = await currentUser.getIdToken();
 
                           if (token == null) {
+                             if (!mounted) return;
                             setState(() => isLoading = false);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Failed to get authentication token. Please try again.')),
@@ -129,7 +121,10 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
                             type: FinalizeAccountSetupRequestType.displayName,
                             displayName: displayName,
                             );
+                          
+                          if (!mounted) return;
                           setState(() => isLoading = false);
+
                           switch (result['status']) {
                             case GenericResponseType.success:
                               initializeSharePreferenceUserData(true);
@@ -148,12 +143,12 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
                           }
                         },
                   child: isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: theme.colorScheme.onPrimary,
                           ),
                         )
                       : const Text("Save"),
@@ -178,6 +173,7 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
                         }
                         final token = await currentUser.getIdToken();
                         if (token == null) {
+                          if (!mounted) return;
                           setState(() => isLoading = false);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Failed to get authentication token. Please try again.')),
@@ -188,7 +184,10 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
                           token: token,
                           type: FinalizeAccountSetupRequestType.skip,
                         );
+                        
+                        if (!mounted) return;
                         setState(() => isLoading = false);
+
                         switch (result['status']) {
                           case GenericResponseType.success:
                             initializeSharePreferenceUserData(true);
@@ -206,24 +205,12 @@ class _SetupAccountPageState extends State<SetupAccountPage> {
                           default:
                         }
                       },
-                child: const Text(
-                  "Skip for now",
-                  style: TextStyle(color: Colors.black54),
-                ),
+                child: const Text("Skip for now"),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Future<void> initializeSharePreferenceUserData(bool isSetUp) async {
-    final user = {
-      'isSetUp': isSetUp
-    };
-    final pref = await SharedPreferences.getInstance();
-    await pref.setString('user', jsonEncode(user));
-    return;
   }
 }

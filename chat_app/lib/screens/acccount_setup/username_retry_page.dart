@@ -4,7 +4,6 @@ import 'package:chat_app/screens/acccount_setup/setup_account_page.dart';
 import 'package:chat_app/screens/auth_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import '../../api/api_functions.dart';
 
 class UsernameRetryPage extends StatefulWidget {
@@ -38,13 +37,11 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
     super.dispose();
   }
 
-  /// Validate username format
   bool _isValidUsername(String username) {
-    final regex = RegExp(r'^[a-zA-Z0-9_]{3,16}$'); // 3-16 chars, letters/numbers/_
+    final regex = RegExp(r'^[a-zA-Z0-9_]{3,16}$');
     return regex.hasMatch(username);
   }
 
-  /// Debounced username checking
   void _onUsernameChanged() {
     final username = usernameController.text.trim();
     if (username.isEmpty) {
@@ -74,23 +71,29 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
     _debounce = Timer(const Duration(seconds: 1), () async {
       try {
         final available = await checkUsername(username);
-        setState(() {
-          isCheckingUsername = false;
-          isUsernameAvailable = available;
-        });
+        if (mounted) {
+          setState(() {
+            isCheckingUsername = false;
+            isUsernameAvailable = available;
+          });
+        }
       } catch (e) {
-        setState(() {
-          isCheckingUsername = false;
-          usernameCheckError = 'Network error';
-        });
+        if (mounted) {
+          setState(() {
+            isCheckingUsername = false;
+            usernameCheckError = 'Network error';
+          });
+        }
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+
     return Scaffold(
-      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
@@ -98,13 +101,9 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Header
-              const Text(
+              Text(
                 "Choose a username",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
+                style: textTheme.headlineMedium,
               ),
               const SizedBox(height: 40),
 
@@ -127,7 +126,10 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     usernameCheckError!,
-                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                    style: TextStyle(
+                      color: theme.colorScheme.error,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
 
@@ -137,15 +139,6 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                   onPressed: isLoading
                       ? null
                       : () async {
@@ -153,9 +146,9 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
                               usernameCheckError != null ||
                               usernameController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Invalid username'),
-                                backgroundColor: Colors.red,
+                              SnackBar(
+                                content: const Text('Invalid username'),
+                                backgroundColor: theme.colorScheme.error,
                               ),
                             );
                             return;
@@ -167,9 +160,9 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
 
                           if(currentUser == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('User not authenticated'),
-                                backgroundColor: Colors.red,
+                              SnackBar(
+                                content: const Text('User not authenticated'),
+                                backgroundColor: theme.colorScheme.error,
                               ),
                             );
                             setState(() => isLoading = false);
@@ -185,9 +178,9 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
 
                           if (token == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Failed to retrieve authentication token'),
-                                backgroundColor: Colors.red,
+                              SnackBar(
+                                content: const Text('Failed to retrieve authentication token'),
+                                backgroundColor: theme.colorScheme.error,
                               ),
                             );
                             setState(() => isLoading = false);
@@ -196,43 +189,39 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
                                 builder: (context) => const AuthPage(),
                               ),
                             );
-                            setState(() => isLoading = false);
                             return;
                           }
 
                           final result = await updateUsername(
                             username: usernameController.text.trim(),
                             token: token,
-                          );  
+                          );
+
+                          if (!mounted) return;
 
                           if(result['status'] == UpdateUsernameResponseType.usernameUpdatedSuccessfully) {
-                            if (mounted) {
-                              setState(() => isLoading = false);
-                              navigatorKey.currentState?.pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (context) => const SetupAccountPage(),
-                                ),
-                              );
-                            }
-                          }else{
-                            if (mounted) {
-                              setState(() => isLoading = false);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(result['message']),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
+                            navigatorKey.currentState?.pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => const SetupAccountPage(),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(result['message']),
+                                backgroundColor: theme.colorScheme.error,
+                              ),
+                            );
                           }
+                          setState(() => isLoading = false);
                         },
                   child: isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: theme.colorScheme.onPrimary,
                           ),
                         )
                       : const Text("Continue"),
@@ -245,7 +234,6 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
     );
   }
 
-  /// Username check icon widget
   Widget _buildUsernameStatus() {
     if (usernameController.text.isEmpty) return const SizedBox();
     if (isCheckingUsername) {
@@ -259,7 +247,7 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
       return const Icon(Icons.check_circle, color: Colors.green, size: 20);
     }
     if (isUsernameAvailable == false) {
-      return const Icon(Icons.cancel, color: Colors.red, size: 20);
+      return Icon(Icons.cancel, color: Theme.of(context).colorScheme.error, size: 20);
     }
     return const SizedBox();
   }
@@ -271,13 +259,6 @@ class _UsernameRetryPageState extends State<UsernameRetryPage> {
       decoration: InputDecoration(
         hintText: hint,
         prefixIcon: Icon(icon, size: 20),
-        filled: true,
-        fillColor: Colors.grey.shade100,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
       ),
     );
   }
