@@ -105,3 +105,15 @@ functions:
     package:
       patterns:
         - app/protected/searchUser/**
+
+  initializeChatApi:
+    handler: app/protected/messages/initializeChat/handler.initializeChat
+    events:
+      - httpApi:
+          path: /api/protected/initializeChat
+          method: GET
+          authorizer:
+            name: firebaseAuth
+    package:
+      patterns:
+        - app/protected/messages/initializeChat/**

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:animations/animations.dart';
+import 'package:chat_app/screens/profile/user_profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../api/api_functions.dart';
-import '../profile/user_profile_page.dart';
 
 class UserSearchPage extends StatefulWidget {
   const UserSearchPage({super.key});
@@ -257,15 +257,13 @@ class _UserSearchPageState extends State<UserSearchPage> {
     return OpenContainer(
       transitionDuration: const Duration(milliseconds: 400),
       closedElevation: 0,
-      closedColor: Colors.transparent,
+      closedColor: theme.colorScheme.surface,
       closedBuilder: (_, openContainer) {
         return Material(
           color: theme.cardColor,
-          borderRadius: BorderRadius.circular(16),
           child: InkWell(
             splashColor: theme.splashColor,
             highlightColor: theme.highlightColor,
-            borderRadius: BorderRadius.circular(16),
             onTap: openContainer,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

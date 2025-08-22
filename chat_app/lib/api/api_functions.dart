@@ -239,3 +239,47 @@ Future<Map<String, dynamic>> searchUsers({
     'message': 'An unknown error occurred.',
   };
 }
+
+enum InitializeChatResponseType {
+  success,
+  alreadyPresent,
+  failure,
+}
+
+Future<Map<String, dynamic>> initializeChat({
+  required String otherUserId,
+  required String token,
+}) async {
+  final url = Uri.parse('${apiLinks['initializeChat']}?recipientId=$otherUserId');
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
+  final response = await http.get(url, headers: headers);
+  if (response.statusCode == 200 || response.statusCode == 201) {
+    final data = jsonDecode(response.body);
+    if (data['type'] == 1) {
+      return {
+        'status': InitializeChatResponseType.success,
+        'message': data['message'],
+        'chatId': data['chatId'],
+      };
+    } else if(data['type'] == 2) {
+      return {
+        'status': InitializeChatResponseType.alreadyPresent,
+        'message': data['message'],
+        'chatId': data['chatId'],
+      };
+    }else{
+      return {
+        'status': InitializeChatResponseType.failure,
+        'message': data['message'],
+      };
+    }
+  } else {
+    return {
+      'status': GenericResponseType.failure,
+      'message': 'An unknown error occurred.',
+    };
+  }
+}
