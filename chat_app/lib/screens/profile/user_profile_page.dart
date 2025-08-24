@@ -4,6 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../theme/app_theme.dart';
+
 class UserProfilePage extends StatefulWidget {
   final Map<String, dynamic> user;
   const UserProfilePage({super.key, required this.user});
@@ -91,6 +93,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
     final lastSeen = widget.user['last_seen'];
     final createdAt = widget.user['created_at'];
 
+    final avatarColor = Theme.of(context).extension<CustomColors>()?.avatarBackground;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -102,25 +106,25 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 alignment: Alignment.center,
                 child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 54,
-                      backgroundImage:
-                          profileUrl != null ? NetworkImage(profileUrl) : null,
-                      backgroundColor:
-                          theme.colorScheme.secondaryContainer.withOpacity(0.6),
-                      child: profileUrl == null
-                          ? Text(
-                              username.isNotEmpty
-                                  ? username[0].toUpperCase()
-                                  : "?",
-                              style: theme.textTheme.headlineLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onSecondaryContainer,
-                              ),
-                            )
-                          : null,
+                    children: [
+                    Hero(
+                      tag: '${widget.user['id']}avatar',
+                      child: CircleAvatar(
+                        radius: 54,
+                        backgroundImage: profileUrl != null ? NetworkImage(profileUrl) : null,
+                        backgroundColor: avatarColor,
+                        child: profileUrl == null
+                            ? Text(
+                                username.isNotEmpty ? username[0].toUpperCase() : "?",
+                                style: theme.textTheme.headlineLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSecondaryContainer,
+                                ),
+                              )
+                            : null,
+                      ),
                     ),
+
                     const SizedBox(height: 16),
                     Text(
                       displayName ?? username,

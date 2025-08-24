@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:animations/animations.dart';
-import 'package:chat_app/screens/profile/user_profile_page.dart';
 import 'package:flutter/material.dart';
+import 'package:chat_app/screens/profile/user_profile_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../api/api_functions.dart';
+import 'package:chat_app/theme/app_theme.dart';
 
 class UserSearchPage extends StatefulWidget {
   const UserSearchPage({super.key});
@@ -13,7 +13,7 @@ class UserSearchPage extends StatefulWidget {
 }
 
 class _UserSearchPageState extends State<UserSearchPage> {
-  final TextEditingController _searchController = TextEditingController();
+  TextEditingController? _searchController;
   Timer? _debounce;
 
   List<Map<String, dynamic>> _users = [];
@@ -24,13 +24,14 @@ class _UserSearchPageState extends State<UserSearchPage> {
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onSearchChanged);
+    _searchController = TextEditingController();
+    _searchController!.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
+    _searchController?.removeListener(_onSearchChanged);
+    _searchController?.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -38,7 +39,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
   void _onSearchChanged() {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), () {
-      final query = _searchController.text.trim();
+      final query = _searchController?.text.trim() ?? '';
       if (query.length > 1) {
         _performSearch(query);
       } else {
@@ -112,12 +113,15 @@ class _UserSearchPageState extends State<UserSearchPage> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildSearchBar(),
-            Expanded(child: _buildContent()),
-          ],
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(
+              children: [
+                _buildHeader(),
+                _buildSearchBar(),
+                Expanded(child: _buildContent()),
+              ],
+            ),
         ),
       ),
     );
@@ -139,7 +143,11 @@ class _UserSearchPageState extends State<UserSearchPage> {
             ),
           ),
           IconButton(
-            icon: Icon(Icons.close, color: theme.colorScheme.onSurface, size: 28),
+            icon: Icon(
+              Icons.close,
+              color: theme.colorScheme.onSurface,
+              size: 28,
+            ),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ],
@@ -147,50 +155,85 @@ class _UserSearchPageState extends State<UserSearchPage> {
     );
   }
 
-  Widget _buildSearchBar() {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: TextField(
-        controller: _searchController,
-        autofocus: true,
-        style: theme.textTheme.bodyLarge?.copyWith(
-          color: theme.colorScheme.onSurface,
-        ),
-        decoration: InputDecoration(
-          hintText: "Search by name or username",
-          hintStyle: TextStyle(color: theme.hintColor),
-          prefixIcon:
-              Icon(Icons.search, color: theme.colorScheme.onSurfaceVariant, size: 24),
-          filled: true,
-          fillColor: theme.colorScheme.surface,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-            borderSide: BorderSide(color: theme.colorScheme.surfaceContainerHighest, width: 1),
-          ),
+Widget _buildSearchBar() {
+  final theme = Theme.of(context);
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+    child: Hero(
+      tag: 'new-message-hero',
+      flightShuttleBuilder: (flightContext, animation, direction, fromContext, toContext) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            final color = Color.lerp(
+              theme.colorScheme.primary,  
+              theme.colorScheme.surface,      
+              animation.value,           
+            );
+            return Material(
+              type: MaterialType.transparency,
+              child: _buildSearchField(theme, color!),
+            );
+          },
+        );
+      },
+      child: Material(
+        type: MaterialType.transparency,
+        child: _buildSearchField(theme, theme.colorScheme.surface),
+      ),
+    ),
+  );
+}
+
+Widget _buildSearchField(ThemeData theme, Color fillColor) {
+  return TextField(
+    controller: _searchController,
+    style: theme.textTheme.bodyLarge?.copyWith(
+      color: theme.colorScheme.onSurface,
+    ),
+    decoration: InputDecoration(
+      hintText: "Search by name or username",
+      hintStyle: TextStyle(color: theme.hintColor),
+      prefixIcon: Icon(
+        Icons.search,
+        color: theme.colorScheme.onSurfaceVariant,
+        size: 24,
+      ),
+      filled: true,
+      fillColor: fillColor, // <-- dynamic color
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 16,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide(
+          color: theme.colorScheme.primary,
+          width: 1.5,
         ),
       ),
-    );
-  }
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(30),
+        borderSide: BorderSide(
+          color: theme.colorScheme.surfaceContainerHighest,
+          width: 1,
+        ),
+      ),
+    ),
+  );
+}
+
 
   Widget _buildContent() {
     final theme = Theme.of(context);
 
     if (_isLoading) {
       return Center(
-        child: CircularProgressIndicator(
-          color: theme.colorScheme.primary,
-        ),
+        child: CircularProgressIndicator(color: theme.colorScheme.primary),
       );
     }
 
@@ -248,89 +291,96 @@ class _UserSearchPageState extends State<UserSearchPage> {
     );
   }
 
-  Widget _buildUserTile(Map<String, dynamic> user) {
-    final theme = Theme.of(context);
-    final name = user['display_name'] ?? user['username'] ?? 'N/A';
-    final username = user['username'] ?? 'N/A';
-    final profileUrl = user['profile_picture_url'];
+Widget _buildUserTile(Map<String, dynamic> user) {
+  final theme = Theme.of(context);
+  final name = user['display_name'] ?? user['username'] ?? 'N/A';
+  final username = user['username'] ?? 'N/A';
+  final profileUrl = user['profile_picture_url'];
 
-    return OpenContainer(
-      transitionDuration: const Duration(milliseconds: 400),
-      closedElevation: 0,
-      closedColor: theme.colorScheme.surface,
-      closedBuilder: (_, openContainer) {
-        return Material(
-          color: theme.cardColor,
-          child: InkWell(
-            splashColor: theme.splashColor,
-            highlightColor: theme.highlightColor,
-            onTap: openContainer,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  _buildAvatar(profileUrl, name),
-                  const SizedBox(width: 12),
-                  _buildUserText(name, username),
-                  Icon(Icons.arrow_forward_ios,
-                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
-                      size: 16),
-                ],
-              ),
-            ),
+  return Material(
+    color: theme.colorScheme.surface,
+    borderRadius: BorderRadius.circular(16),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(16),
+      splashColor: theme.colorScheme.primary.withOpacity(0.1),
+      highlightColor: theme.colorScheme.primary.withOpacity(0.05),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserProfilePage(user: user),
           ),
         );
       },
-      openBuilder: (_, __) => UserProfilePage(user: user),
-    );
-  }
-
-
-  Widget _buildAvatar(String? url, String name) {
-    final theme = Theme.of(context);
-    return CircleAvatar(
-      radius: 26,
-      backgroundColor: theme.colorScheme.primaryContainer,
-      backgroundImage: url != null ? NetworkImage(url) : null,
-      child: url == null
-          ? Text(
-              name.isNotEmpty ? name[0].toUpperCase() : '',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.bold,
-              ),
-            )
-          : null,
-    );
-  }
-
-  Widget _buildUserText(String name, String username) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            name,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Hero(
+              tag: '${user['id']}avatar',
+              child: _buildMinimalAvatar(profileUrl, name),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 3),
-          Text(
-            "@$username",
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(width: 12),
+            _buildMinimalUserText(name, username),
+            const SizedBox(width: 6),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+              size: 16,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
+
+Widget _buildMinimalAvatar(String? url, String name) {
+  final theme = Theme.of(context);
+  final avatarColor = Theme.of(context).extension<CustomColors>()?.avatarBackground;
+  return CircleAvatar(
+    radius: 26,
+    backgroundColor: avatarColor,
+    backgroundImage: url != null ? NetworkImage(url) : null,
+    child: url == null
+        ? Text(
+            name.isNotEmpty ? name[0].toUpperCase() : '',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          )
+        : null,
+  );
+}
+
+Widget _buildMinimalUserText(String name, String username) {
+  final theme = Theme.of(context);
+  return Expanded(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          name,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          "@$username",
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ),
+  );
+}
+
 }

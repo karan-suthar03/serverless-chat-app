@@ -1,4 +1,3 @@
-// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -16,10 +15,19 @@ class AppTheme {
       secondary: Colors.grey.shade600,
       background: Colors.white,
       surface: Colors.grey.shade100,
+      surfaceVariant: Colors.grey.shade50,
       onPrimary: Colors.white,
       onBackground: Colors.black87,
       error: Colors.red,
+      onSurface: Colors.black87,
+      onSurfaceVariant: Colors.grey.shade700,
     ),
+
+    extensions: <ThemeExtension<dynamic>>[
+      CustomColors(
+        avatarBackground: Colors.blueGrey.withAlpha(25),
+      ),
+    ],
 
     textTheme: const TextTheme(
       headlineMedium: TextStyle(
@@ -27,13 +35,14 @@ class AppTheme {
         fontWeight: FontWeight.w600,
         color: Colors.black87,
       ),
-      bodyLarge: TextStyle(
+      titleMedium: TextStyle(
         fontSize: 16,
+        fontWeight: FontWeight.w600,
         color: Colors.black87,
       ),
-      labelLarge: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
+      bodySmall: TextStyle(
+        fontSize: 14,
+        color: Colors.black54,
       ),
     ),
 
@@ -68,5 +77,25 @@ class AppTheme {
       ),
     ),
   );
-  // TODO: Implement dark theme
+}
+
+class CustomColors extends ThemeExtension<CustomColors> {
+  final Color? avatarBackground;
+
+  const CustomColors({this.avatarBackground});
+
+  @override
+  CustomColors copyWith({Color? avatarBackground}) {
+    return CustomColors(
+      avatarBackground: avatarBackground ?? this.avatarBackground,
+    );
+  }
+
+  @override
+  CustomColors lerp(ThemeExtension<CustomColors>? other, double t) {
+    if (other is! CustomColors) return this;
+    return CustomColors(
+      avatarBackground: Color.lerp(avatarBackground, other.avatarBackground, t),
+    );
+  }
 }
