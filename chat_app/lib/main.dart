@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:chat_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'screens/splash_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
@@ -9,7 +10,7 @@ final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
