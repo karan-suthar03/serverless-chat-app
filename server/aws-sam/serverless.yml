@@ -117,3 +117,15 @@ functions:
     package:
       patterns:
         - app/protected/messages/initializeChat/**
+
+  getChatsApi:
+    handler: app/protected/messages/getAllChats/handler.getAllChats
+    events:
+      - httpApi:
+          path: /api/protected/getAllChats
+          method: GET
+          authorizer:
+            name: firebaseAuth
+    package:
+      patterns:
+        - app/protected/messages/getAllChats/**

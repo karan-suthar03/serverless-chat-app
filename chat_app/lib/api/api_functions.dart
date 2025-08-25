@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'api_links.dart';
+import '../models/chat_response_model.dart';
 /* TODO: probably have to make a make some kind of machanism to do get 
  * requests and other requests with same type of error handling */
 Future<bool> checkUsername(String username) async {
@@ -280,6 +281,59 @@ Future<Map<String, dynamic>> initializeChat({
     return {
       'status': GenericResponseType.failure,
       'message': 'An unknown error occurred.',
+    };
+  }
+}
+
+enum GetAllChatsResponseType {
+  success,
+  failure,
+}
+
+Future<Map<String, dynamic>> getAllChats({
+  required String token,
+  int page = 1,
+  int limit = 20,
+}) async {
+  final url = Uri.parse('${apiLinks['getAllChats']}?page=$page&limit=$limit');
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
+  
+  try {
+    final response = await http.get(url, headers: headers);
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      
+      if (data['type'] == 1) {
+        // Parse the response using our model
+        final chatResponse = ChatResponseModel.fromJson(data);
+        
+        return {
+          'status': GetAllChatsResponseType.success,
+          'message': 'Chats fetched successfully',
+          'chatResponse': chatResponse,
+          'chats': chatResponse.chats,
+          'pagination': chatResponse.pagination,
+        };
+      } else {
+        return {
+          'status': GetAllChatsResponseType.failure,
+          'message': data['message'] ?? 'Failed to fetch chats',
+        };
+      }
+    } else {
+      return {
+        'status': GetAllChatsResponseType.failure,
+        'message': 'Failed to fetch chats. Status code: ${response.statusCode}',
+      };
+    }
+  } catch (error) {
+    return {
+      'status': GetAllChatsResponseType.failure,
+      'message': 'Network error: ${error.toString()}',
     };
   }
 }

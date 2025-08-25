@@ -9,4 +9,5 @@ const Map<String, String> apiLinks = {
   'me': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/me',
   'searchUsers': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/searchUsers',
   'initializeChat': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/initializeChat',
+  'getAllChats': 'https://jvd2c9nr2l.execute-api.ap-south-1.amazonaws.com/api/protected/getAllChats',
 };
