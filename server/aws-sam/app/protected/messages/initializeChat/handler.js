@@ -7,47 +7,43 @@ exports.initializeChat = async (event) => {
   const claims = event.requestContext.authorizer.jwt.claims;
   const uid = claims.user_id; // current user
   const recipientId = event.queryStringParameters.recipientId; // recipient
+  
+  const trx = await knex.transaction();
 
   try {
     // Check if a private chat already exists between these two users
-    const existingChat = await knex.raw(`
-      SELECT c.id
-      FROM chats c
-      JOIN chat_participants cp1 ON c.id = cp1.chat_id
-      JOIN chat_participants cp2 ON c.id = cp2.chat_id
-      WHERE c.type = 'private'
-        AND cp1.user_id = ?
-        AND cp2.user_id = ?
-      LIMIT 1
-    `, [uid, recipientId]);
+    const existingChat = await trx('chats as c')
+      .select('c.id')
+      .join('chat_participants as cp1', 'c.id', 'cp1.chat_id')
+      .join('chat_participants as cp2', 'c.id', 'cp2.chat_id')
+      .where('c.type', 'private')
+      .andWhere('cp1.user_id', uid)
+      .andWhere('cp2.user_id', recipientId)
+      .first();
 
-    if (existingChat.rows.length > 0) {
-      // Return existing chat
+    if (existingChat) {
+      await trx.commit();
       return {
         statusCode: 200,
         body: JSON.stringify({
           type: 2,
-          chatId: existingChat.rows[0].id,
+          chatId: existingChat.id,
           message: 'Private chat already exists',
         }),
       };
     }
 
-    // Create new chat with participants
-    const result = await knex.raw(`
-      WITH new_chat AS (
-        INSERT INTO chats (id, type)
-        VALUES (uuid_generate_v4(), 'private')
-        RETURNING id
-      )
-      INSERT INTO chat_participants (user_id, chat_id)
-      SELECT u.id, nc.id
-      FROM (VALUES (?, ?)) AS u(id)
-      CROSS JOIN new_chat AS nc
-      RETURNING chat_id
-    `, [uid, recipientId]);
+    // Step 1: Create the new chat within the transaction.
+    const [newChat] = await trx('chats').insert({ type: 'private' }).returning('id');
+    const chatId = newChat.id;
 
-    const chatId = result.rows[0].chat_id;
+    // Step 2: Insert both participants into the chat_participants table.
+    await trx('chat_participants').insert([
+      { user_id: uid, chat_id: chatId },
+      { user_id: recipientId, chat_id: chatId },
+    ]);
+
+    await trx.commit();
 
     return {
       statusCode: 201,
@@ -59,6 +55,7 @@ exports.initializeChat = async (event) => {
     };
 
   } catch (err) {
+    await trx.rollback();
     console.error("Initialize chat error:", err);
     return {
       statusCode: 500,
